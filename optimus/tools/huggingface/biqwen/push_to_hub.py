@@ -72,7 +72,6 @@ def main():
 
     # Build the command to run
     command = (
-        f'source /lus/work/CT10/c1816236/nboizard/venv_dec2enc/bin/activate && '
         f'huggingface-cli upload-large-folder '
         f'"{args.organization}/{args.model_name}" '
         f'--repo-type=model '
