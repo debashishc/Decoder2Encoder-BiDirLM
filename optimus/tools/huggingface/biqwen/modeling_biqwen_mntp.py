@@ -416,8 +416,8 @@ class BiQwen3Model(BiQwen3PreTrainedModel):
             new_attention_mask = torch.empty((batch_size, seq_len + 1), dtype=attention_mask.dtype, device=attention_mask.device)
             new_attention_mask[:, 0] = 1
             new_attention_mask[:, 1:] = attention_mask
-            input_ids, cu_seqlens, max_seqlen = batch_input_to_cu_seqlens(new_input_ids, new_attention_mask)
             attention_mask = new_attention_mask
+            input_ids, cu_seqlens, max_seqlen = batch_input_to_cu_seqlens(new_input_ids, attention_mask)
         else:
             input_ids = new_input_ids
 
