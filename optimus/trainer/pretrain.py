@@ -21,6 +21,12 @@ from optimus.trainer.script.distillation.knowledge_distillation import (
 )
 from optimus.trainer.script.warmup_stable_decay_lr import WarmupStableDecayLR
 
+try:
+    from peft import get_peft_model, LoraConfig
+    PEFT_AVAILABLE = True
+except ImportError:
+    PEFT_AVAILABLE = False
+
 
 class Pretrain:
     """Pretrain class to train the model."""
@@ -289,7 +295,7 @@ class Pretrain:
             total_loss += loss.item()
 
         loss = total_loss / len(self.data.eval_dataloader)
-        if self.train_config.fsdp or self.train_config.ddp:
+        if self.train_config.fsdp:
             loss = torch.tensor(loss, device=self.model.device)
             dist.all_reduce(loss, op=dist.ReduceOp.AVG)
             loss = loss.item()
@@ -321,8 +327,8 @@ class Pretrain:
                     self.model, self.optimizer, path
                 )
             elif self.main_process:
-                if self.train_config.ddp:
-                    torch.save(self.model.module.state_dict(), path + "model.pt")
+                if self.train_config.lora_finetuning:
+                    self.model.save_pretrained(path)
                 else:
                     torch.save(self.model.state_dict(), path + "model.pt")
                 self.config.log_print("Model saved.")
@@ -334,6 +340,7 @@ class Pretrain:
             and self.main_process
         ):
             torch.save(self.optimizer.state_dict(), path + "optimizer.pt")
+            os.remove(path + "/README.md") if os.path.exists(path + "/README.md") else None
             self.config.log_print("Optimizer saved.")
 
         if self.train_config.save_scheduler and self.main_process:
@@ -373,12 +380,7 @@ class Pretrain:
                 self.model, self.optimizer, checkpoint_path
             )
         else:
-            if self.train_config.ddp:
-                self.model.module.load_state_dict(
-                    torch.load(model_path, map_location="cpu")
-                )
-            else:
-                self.model.load_state_dict(torch.load(model_path, map_location="cpu"))
+            self.model.load_state_dict(torch.load(model_path, map_location="cpu"))
         self.config.log_print("Model reloaded.")
 
         # Optimizer reloading

@@ -31,9 +31,6 @@ class Config:
 
         self.update_config(**kwargs)
 
-        assert not (
-            self.train.fsdp and self.train.ddp
-        ), "FSDP is not supported with DDP."
         assert self.system.num_nodes > 0, "Number of nodes must be greater than 0."
 
     def update_config(self, **kwargs):
@@ -75,10 +72,6 @@ class Config:
     @property
     def use_fsdp(self):
         return self.train.fsdp
-
-    @property
-    def use_ddp(self):
-        return self.train.ddp
 
     @property
     def is_main_process(self):

@@ -13,7 +13,7 @@
 
 - **Hardware Agnostic**: Seamlessly train on CPU, AMD, or NVIDIA hardware.
 - **Resumable Training**: Continue training regardless of hardware or environment changes.
-- **Scalable Distributed Training**: Supports **Fully Sharded Data Parallel (FSDP)**, **Distributed Data Parallel (DDP)**, and other parallelism strategies.
+- **Scalable Distributed Training**: Supports **Fully Sharded Data Parallel (FSDP)**, and other parallelism strategies.
 - **Comprehensive Data Processing**: Includes utilities for **tokenization, packing, subsampling, and dataset inspection**.
 - **Highly Customizable**: Fine-tune model architecture, training, and data processing with extensive configuration options.
 - **Performance Optimizations**: Implements advanced techniques like **mixed precision training**, **fused operations**, and optimizations such as [Liger Kernel](https://github.com/linkedin/Liger-Kernel) and [Flash Attention](https://github.com/Dao-AILab/flash-attention).

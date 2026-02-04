@@ -2,7 +2,7 @@
 
 Optimus is the EuroBERT training library compatible with CPU, AMD, or NVIDIA hardware! This repository provides a **flexible and scalable training environment** with fully customizable model, data, and training parameters, supporting [Liger Kernel](https://github.com/linkedin/Liger-Kernel) and [Flash Attention](https://github.com/Dao-AILab/flash-attention). 
 
-Optimus is designed to allow **resumable training**, whether you're using the same or a different hardware configuration. It also supports **Fully Sharded Data Parallel (FSDP)**, **Distributed Data Parallel (DDP)**, and other parallelism strategies, enabling efficient scaling across multiple GPUs or nodes.
+Optimus is designed to allow **resumable training**, whether you're using the same or a different hardware configuration. It also supports **Fully Sharded Data Parallel (FSDP)**, and other parallelism strategies, enabling efficient scaling across multiple GPUs or nodes.
 
 Whether you're a beginner or an expert, let's get started!
 
@@ -81,8 +81,7 @@ Fine-tune your training process with these parameters.
 | skip_reload_dataloader | bool | False | Skip reloading the data loader. |
 | skip_reload_tensorboard | bool | False | Skip reloading the tensorboard. |
 | fsdp | bool | False | Enable FullyShardedDataParallel (FSDP). |
-| ddp | bool | False | Enable DistributedDataParallel (DDP). |
-| mixed_bfloat16 | bool | True | Enable mixed precision training for regular and ddp training. |
+| mixed_bfloat16 | bool | True | Enable mixed precision training for regular training. |
 | _mixed_precision | str | bfloat16 | FSDP training ShardingStrategy (`float32`, `float16`, `bfloat16`, `mixed_float16`, `mixed_bfloat16`, `bfloat16_reduce_32`), [PyTorch doc](https://pytorch.org/docs/stable/fsdp.html#torch.distributed.fsdp.MixedPrecision), [Config file](https://github.com/Nicolas-BZRD/EuroBERT/blob/main/optimus/trainer/configuration/distributed.py).|
 | seed | int | 42 | Random seed for reproducibility. |
 | tensorboard | bool | True | Enable tensorboard logging. |

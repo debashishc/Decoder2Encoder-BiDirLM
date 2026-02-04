@@ -177,7 +177,7 @@ class MaskingDataset(StreamingDataset):
         
         inputs, cu_seqlens = self._add_special_tokens(item["tokens"], item.get("cu_seqlens"))
         prompts = inputs.tolist() if self.knowledge_distillation else None
-        inputs, labels = self._apply_masking(inputs, cu_seqlens)
+        inputs, labels, cu_seqlens = self._apply_masking(inputs, cu_seqlens)
 
         result = [inputs, labels]
         if cu_seqlens is not None:
@@ -237,12 +237,13 @@ class MaskingDataset(StreamingDataset):
         inputs[indices_random] = np.random.randint(0, len(self.tokenizer), size=labels.shape)[indices_random]
 
         if self.mntp_objective:
+            cu_seqlens = np.copy(cu_seqlens)
             inputs, labels, cu_seqlens = self._apply_mntp_shift(inputs, labels, cu_seqlens)
 
-        return inputs, labels
+        return inputs, labels, cu_seqlens
 
     @staticmethod
-    def _apply_mntp_shift(inputs: NDArray, labels: NDArray, cu_seqlens: NDArray | None):
+    def _apply_mntp_shift(inputs: NDArray, labels: NDArray, cu_seqlens: NDArray):
         num_seqs = len(cu_seqlens) - 1
 
         if cu_seqlens is not None and num_seqs > 1:

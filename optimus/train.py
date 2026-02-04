@@ -16,7 +16,7 @@ def main(**kwargs):
 
     # Distributed training setup
     distributed = None
-    if config.use_ddp or config.use_fsdp:
+    if config.use_fsdp:
         distributed = Distributed(config)
 
     # Load/set model and get tokenizer.
@@ -30,9 +30,6 @@ def main(**kwargs):
     if config.use_fsdp:
         config.log_print("Shared model training with FSDP.")
         model = distributed.fsdp_setup_model(model)
-    elif config.use_ddp:
-        config.log_print("Distributed model training with DDP.")
-        model = distributed.ddp_setup_model(model)
 
     patch_spanner()
     if distributed:

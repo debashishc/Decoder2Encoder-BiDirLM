@@ -11,7 +11,7 @@ from transformers.modeling_layers import (
 )
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
 from transformers.modeling_utils import PreTrainedModel
-from configuration_biqwen import BiQwen3Config
+from .configuration_biqwen import BiQwen3Config
 
 from transformers.modeling_outputs import BaseModelOutput, MaskedLMOutput, SequenceClassifierOutput, TokenClassifierOutput
 
