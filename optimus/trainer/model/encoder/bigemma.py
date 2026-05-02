@@ -230,8 +230,10 @@ class Gemma3DecoderLayer(GradientCheckpointingLayer):
 
 
 class Gemma3PreTrainedModel(PreTrainedModel):
+    config_class = Gemma3Config
     config: Gemma3Config
     _supports_flash_attn = True
+    supports_gradient_checkpointing = True
     
     def _init_weights(self, module):
         super()._init_weights(module)
