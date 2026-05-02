@@ -9,6 +9,7 @@ from torch.distributed.fsdp.wrap import (
     transformer_auto_wrap_policy,
 )
 from optimus.trainer.model.encoder.biqwen import Qwen3EncoderLayer
+from optimus.trainer.model.encoder.bigemma import Gemma3DecoderLayer
 from optimus.trainer.model.model import Block
 
 @dataclass
@@ -83,5 +84,5 @@ class DistributedConfig:
         elif self._wrap_policy == "transformer_auto_wrap_policy":
             return functools.partial(
                 transformer_auto_wrap_policy,
-                transformer_layer_cls={Block, Qwen3EncoderLayer},
+                transformer_layer_cls={Block, Qwen3EncoderLayer, Gemma3DecoderLayer},
             )
