@@ -234,7 +234,10 @@ class MaskingDataset(StreamingDataset):
             & masked_indices
             & ~indices_replaced
         )
-        inputs[indices_random] = np.random.randint(0, len(self.tokenizer), size=labels.shape)[indices_random]
+        # Use vocab_size, not len(tokenizer): added tokens (e.g. Gemma3's
+        # <image_soft_token> at id 262144) sit beyond the model's embedding
+        # rows and trigger a device-side assert when looked up.
+        inputs[indices_random] = np.random.randint(0, self.tokenizer.vocab_size, size=labels.shape)[indices_random]
 
         if self.mntp_objective:
             cu_seqlens = np.copy(cu_seqlens)
