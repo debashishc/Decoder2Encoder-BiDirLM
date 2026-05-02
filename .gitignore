@@ -180,3 +180,5 @@ cython_debug/
 CLAUDE.md
 
 dev
+# Local W&B run state
+wandb/

@@ -45,6 +45,7 @@ def main(**kwargs):
     # Train model
     pretrain = Pretrain(model, data, distributed, config)
     pretrain.train()
+    pretrain.cleanup()
 
     # Cleanup distributed training
     if distributed:

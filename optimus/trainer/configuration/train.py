@@ -63,6 +63,14 @@ class TrainConfig:
     mixed_bfloat16: bool = True
     seed: int = 42
     tensorboard: bool = True
+
+    # Weights & Biases logging (additive to tensorboard).
+    wandb: bool = False
+    wandb_project: str = "bidirlm"
+    wandb_entity: Optional[str] = None
+    wandb_run_name: Optional[str] = None  # defaults to project_name
+    wandb_mode: Literal["online", "offline", "disabled"] = "online"
+
     profile: bool = False
     exit_end_profiling: bool = True
     profiler_output: Literal["chrome", "tensorboard"] = "chrome"

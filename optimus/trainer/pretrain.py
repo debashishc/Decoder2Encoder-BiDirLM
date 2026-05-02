@@ -27,6 +27,12 @@ try:
 except ImportError:
     PEFT_AVAILABLE = False
 
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 
 class Pretrain:
     """Pretrain class to train the model."""
@@ -69,6 +75,29 @@ class Pretrain:
             )
             self.writer = SummaryWriter(
                 f"{self.train_config.output_dir}/{self.train_config.project_name}/tensorboard"
+            )
+
+        # Weights & Biases (rank 0 only). Additive — does not replace tensorboard.
+        self.wandb_run = None
+        if self.main_process and self.train_config.wandb:
+            assert WANDB_AVAILABLE, "Install `wandb` (uv pip install wandb) to enable --wandb."
+            import dataclasses
+            wandb_dir = f"{self.train_config.output_dir}/{self.train_config.project_name}"
+            os.makedirs(wandb_dir, exist_ok=True)
+            self.wandb_run = wandb.init(
+                project=self.train_config.wandb_project,
+                entity=self.train_config.wandb_entity,
+                name=self.train_config.wandb_run_name or self.train_config.project_name,
+                mode=self.train_config.wandb_mode,
+                dir=wandb_dir,
+                resume="allow",
+                config={
+                    "train": dataclasses.asdict(self.train_config),
+                    "data": dataclasses.asdict(self.config.data),
+                    "model": dataclasses.asdict(self.config.model),
+                    "system": dataclasses.asdict(self.config.system),
+                    "tokens_per_step": self.tokens_per_step,
+                },
             )
 
         self.steps_per_epoch = int(
@@ -223,29 +252,21 @@ class Pretrain:
                         )
 
                     if (
-                        self.train_config.tensorboard
-                        and self.main_process
+                        self.main_process
                         and self.step % self.train_config.log_every_n_steps == 0
                     ):
-                        self.writer.add_scalar("Loss/train", total_loss, self.step)
+                        scalars = {
+                            "Loss/train": total_loss,
+                            "Gradient norm": float(grad_norm),
+                            "Learning rate": self.scheduler.get_last_lr()[0],
+                            "Time/step in seconds": end_time - start_time,
+                            "Tokens seen": self.tokens_per_step * self.step,
+                            "Tokens seen/second": self.tokens_per_step / (end_time - start_time),
+                        }
                         if self.train_config.knowledge_distillation:
-                            self.writer.add_scalar("Loss/KL_divergence", kl_loss.detach().item(), self.step)
-                            self.writer.add_scalar("Loss/cross_entropy", ce_loss.detach().item(), self.step)
-                        self.writer.add_scalar("Gradient norm", grad_norm, self.step)
-                        self.writer.add_scalar(
-                            "Learning rate", self.scheduler.get_last_lr()[0], self.step
-                        )
-                        self.writer.add_scalar(
-                            "Time/step in seconds", end_time - start_time, self.step
-                        )
-                        self.writer.add_scalar(
-                            "Tokens seen", self.tokens_per_step * self.step, self.step
-                        )
-                        self.writer.add_scalar(
-                            "Tokens seen/second",
-                            self.tokens_per_step / (end_time - start_time),
-                            self.step,
-                        )
+                            scalars["Loss/KL_divergence"] = kl_loss.detach().item()
+                            scalars["Loss/cross_entropy"] = ce_loss.detach().item()
+                        self._log_scalars(scalars, self.step)
 
                     # Validation
                     if self.train_config.run_validation and (
@@ -300,14 +321,30 @@ class Pretrain:
             dist.all_reduce(loss, op=dist.ReduceOp.AVG)
             loss = loss.item()
 
-        if self.train_config.tensorboard and self.main_process:
-            self.writer.add_scalar("Loss/eval", loss, self.step)
+        if self.main_process:
+            self._log_scalars({"Loss/eval": loss}, self.step)
             self.config.log_print(f"Validation loss: {loss}")
         self.model.train()
 
     # ----------------------
     # Tool functions
     # ----------------------
+
+    def cleanup(self) -> None:
+        """Tear down logging sinks (rank 0 only)."""
+        if self.main_process and self.wandb_run is not None:
+            self.wandb_run.finish()
+
+    def _log_scalars(self, scalars: dict[str, float], step: int) -> None:
+        """Fan-out one set of scalar metrics to TensorBoard and W&B (rank 0 only)."""
+        if not self.main_process:
+            return
+        if self.train_config.tensorboard and hasattr(self, "writer"):
+            for name, value in scalars.items():
+                self.writer.add_scalar(name, value, step)
+        if self.wandb_run is not None:
+            # W&B groups scalars under the same step; key prefixes preserve TB naming.
+            self.wandb_run.log(scalars, step=step)
 
     def save(self) -> None:
         """
