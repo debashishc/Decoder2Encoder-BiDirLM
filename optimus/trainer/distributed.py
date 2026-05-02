@@ -29,6 +29,13 @@ class Distributed:
         self.config = config
         self.distributed_config = config.distributed
 
+        # Pin this rank's CUDA device BEFORE init_process_group / barrier.
+        # NCCL's first collective uses the current device; if all ranks default
+        # to device 0 they contend and crash with "CUDA-capable device(s) is/are
+        # busy or unavailable" at the first dist.barrier().
+        torch.cuda.set_device(self.local_rank)
+        ModelTools.clear_gpu_cache()
+
         dist.init_process_group(
             backend="nccl",
         )
@@ -37,9 +44,6 @@ class Distributed:
         dist.barrier()
         if config.verbose and self.main_process:
             config.log_print("All ranks initialized global process group.")
-
-        torch.cuda.set_device(self.local_rank)
-        ModelTools.clear_gpu_cache()
 
         # Update config with distributed information.
         config.update_config(**self.get_information())
