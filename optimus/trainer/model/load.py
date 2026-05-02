@@ -117,13 +117,30 @@ def load_model(config: Config):
             dict_config_model = asdict(config.model)
         elif "gemma3" in config.model.model_name.lower() or "gemma-3" in config.model.model_name.lower():
             logging.set_verbosity_error()
+            # Load + patch the HF config FIRST: the custom Gemma3 layers read
+            # config.layer_types and config.use_bidirectional_attention during
+            # __init__, so we can't fix these post-load.
+            from transformers.models.gemma3.configuration_gemma3 import Gemma3TextConfig
+            hf_cfg = Gemma3TextConfig.from_pretrained(config.model.model_name)
+            hf_cfg.use_bidirectional_attention = True
+            hf_cfg.sliding_window = hf_cfg.sliding_window // 2
+            if not hasattr(hf_cfg, "layer_types") or hf_cfg.layer_types is None:
+                pattern = getattr(hf_cfg, "sliding_window_pattern", 6)
+                hf_cfg.layer_types = [
+                    "sliding_attention" if bool((i + 1) % pattern) else "full_attention"
+                    for i in range(hf_cfg.num_hidden_layers)
+                ]
             model = Gemma3ForCausalLM.from_pretrained(
                 config.model.model_name,
-                use_bidirectional_attention = True,
+                config=hf_cfg,
                 attn_implementation="flash_attention_2" if config.model.attn_impl == "flash" else None,
                 fused_cross_entropy=config.model.fused_cross_entropy,
             )
-            model.config.sliding_window = model.config.sliding_window // 2
+            # Activation memory at seq=2048 with full attention on every Nth
+            # layer is ~tens-of-GB; enable checkpointing to recompute during
+            # backward and stay under 80 GB on H100.
+            if hasattr(model, "gradient_checkpointing_enable"):
+                model.gradient_checkpointing_enable()
             dict_config_model = asdict(config.model)
         else:
             raise ValueError(f"Model name {config.model.model_name} is not supported.")
