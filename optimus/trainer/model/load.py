@@ -105,7 +105,7 @@ def load_model(config: Config):
                 config.model, eurobert_config[config.model.model_size]
             )
             model = EuroBERT(dict_config_model)
-        elif "qwen3" in config.model.model_name.lower():
+        elif "qwen3" in config.model.model_name.lower() or "qwen-3" in config.model.model_name.lower():
             logging.set_verbosity_error()
             model = Qwen3ForMaskedLM.from_pretrained(
                 config.model.model_name,
@@ -113,7 +113,7 @@ def load_model(config: Config):
                 fused_cross_entropy=config.model.fused_cross_entropy,
             )
             dict_config_model = asdict(config.model)
-        elif "gemma3" in config.model.model_name.lower():
+        elif "gemma3" in config.model.model_name.lower() or "gemma-3" in config.model.model_name.lower():
             logging.set_verbosity_error()
             model = Gemma3ForCausalLM.from_pretrained(
                 config.model.model_name,
