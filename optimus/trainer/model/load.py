@@ -59,7 +59,9 @@ def load_tokenizer(config: Config) -> PreTrainedTokenizer | PreTrainedTokenizerF
         assert (
             config.model.mask_token_id is not None
         ), "Mask token id to use is not provided (config.model.mask_token_id)."
-        tokenizer.mask_token = "[MASK]"
+        # Use the actual token string at the configured id so downstream
+        # convert_tokens_to_ids(tokenizer.mask_token) round-trips correctly.
+        tokenizer.mask_token = tokenizer.convert_ids_to_tokens(config.model.mask_token_id)
         tokenizer.mask_token_id = config.model.mask_token_id
     if config.data.add_bos_token and tokenizer.bos_token is None:
         assert (
